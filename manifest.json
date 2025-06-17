@@ -10,7 +10,7 @@
     "secrets": {},
     "sourceCodePath": "./worker.ts",
     "action": "SCHEDULED_EVENT",
-    "enabled": false,
+    "enabled": true,
     "debug": false,
     "projectKey": "",
     "application": "worker"
