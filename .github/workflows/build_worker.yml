@@ -46,7 +46,7 @@ jobs:
 
       - name: Run JFrog CLI audit (local security scan)
         run: |
-          jf audit --local
+          jf audit
 
       - name: Dry-run Worker
         run: |
