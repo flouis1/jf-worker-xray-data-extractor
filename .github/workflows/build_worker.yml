@@ -46,11 +46,11 @@ jobs:
 
       - name: Dry-run Worker
         run: |
-          jf worker dry-run --server-id psemea '{}'
+          jf worker dry-run '{}'
 
       - name: Deploy Worker
         run: |
-          jf worker deploy --server-id psemea
+          jf worker deploy
 
       - name: Trigger the JFrog Worker "xray-data-extractor"
         run: |
