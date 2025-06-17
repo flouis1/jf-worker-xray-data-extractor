@@ -1,0 +1,53 @@
+name: Test JFrog Worker - xray-data-extractor
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_name:
+        description: 'Name of the build to analyze'
+        required: true
+        default: 'example-build'
+      build_number:
+        description: 'Build number to analyze'
+        required: true
+        default: '1'
+
+jobs:
+  trigger-worker:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write # Required for OIDC authentication
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JFrog CLI with OIDC
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: https://psemea.jfrog.io
+        with:
+          oidc-provider-name: fabien-github
+
+      - name: Trigger the JFrog Worker "xray-data-extractor"
+        run: |
+          echo "Triggering the JFrog Worker..."
+          RESPONSE=$(jf rt curl -X POST "/workers/api/v1/run/xray-data-extractor" \
+            -H "Content-Type: application/json" \
+            -d "{\"build_name\":\"${{ github.event.inputs.build_name }}\",\"build_number\":\"${{ github.event.inputs.build_number }}\"}" \
+            --quiet)
+          
+          echo "Worker response:"
+          echo "$RESPONSE"
+
+      - name: Store Worker output to file
+        run: |
+          echo "$RESPONSE" > worker-output.json
+
+      - name: Upload Worker output as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: worker-output
+          path: worker-output.json
