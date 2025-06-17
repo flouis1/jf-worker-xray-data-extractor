@@ -44,6 +44,10 @@ jobs:
         with:
           oidc-provider-name: fabien-github
 
+      - name: Run JFrog CLI audit (local security scan)
+        run: |
+          jf audit --local
+
       - name: Dry-run Worker
         run: |
           jf worker dry-run '{}'
@@ -52,18 +56,3 @@ jobs:
         run: |
           jf worker deploy
 
-      - name: Trigger the JFrog Worker "xray-data-extractor"
-        run: |
-          echo "Triggering the Worker..."
-          RESPONSE=$(jf rt curl -X POST "/workers/api/v1/run/xray-data-extractor" \
-            -H "Content-Type: application/json" \
-            -d "{\"build_name\":\"${{ github.event.inputs.build_name }}\",\"build_number\":\"${{ github.event.inputs.build_number }}\"}" \
-            --quiet)
-          echo "$RESPONSE" > worker-output.json
-          echo "Worker triggered successfully."
-
-      - name: Upload Worker Output
-        uses: actions/upload-artifact@v4
-        with:
-          name: worker-output
-          path: worker-output.json
