@@ -1,52 +1,77 @@
-name: Test JFrog Worker - xray-data-extractor
+name: Deploy and Run JFrog Worker - xray-data-extractor
 
 on:
   workflow_dispatch:
     inputs:
       build_name:
-        description: 'Name of the build to analyze'
+        description: 'Build name for Xray analysis'
         required: true
         default: 'example-build'
       build_number:
-        description: 'Build number to analyze'
+        description: 'Build number for Xray analysis'
         required: true
         default: '1'
+  push:
+    branches:
+      - main
 
 jobs:
-  trigger-worker:
+  test-deploy-run:
+    name: Test, Deploy & Run Worker
     runs-on: ubuntu-latest
 
     permissions:
-      id-token: write # Required for OIDC authentication
+      id-token: write
       contents: read
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JFrog CLI with OIDC
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: |
+          npm ci
+
+      - name: Run unit tests
+        run: |
+          npm run test
+
+      - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
         env:
           JF_URL: https://psemea.jfrog.io
         with:
           oidc-provider-name: fabien-github
 
+      - name: Initialize Worker (first-time only)
+        if: ${{ false }} # Disable unless needed
+        run: |
+          jf worker init SCHEDULED_EVENT xray-data-extractor
+
+      - name: Dry-run Worker
+        run: |
+          jf worker dry-run --server-id psemea '{}'
+
+      - name: Deploy Worker
+        run: |
+          jf worker deploy --server-id psemea
+
       - name: Trigger the JFrog Worker "xray-data-extractor"
         run: |
-          echo "Triggering the JFrog Worker..."
+          echo "Triggering the Worker..."
           RESPONSE=$(jf rt curl -X POST "/workers/api/v1/run/xray-data-extractor" \
             -H "Content-Type: application/json" \
             -d "{\"build_name\":\"${{ github.event.inputs.build_name }}\",\"build_number\":\"${{ github.event.inputs.build_number }}\"}" \
             --quiet)
-          
-          echo "Worker response:"
-          echo "$RESPONSE"
-
-      - name: Store Worker output to file
-        run: |
           echo "$RESPONSE" > worker-output.json
+          echo "Worker triggered successfully."
 
-      - name: Upload Worker output as artifact
+      - name: Upload Worker Output
         uses: actions/upload-artifact@v4
         with:
           name: worker-output
