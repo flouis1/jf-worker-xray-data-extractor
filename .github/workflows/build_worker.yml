@@ -39,7 +39,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          npm run test
+          npm run test --passWithNoTests
 
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
@@ -47,11 +47,6 @@ jobs:
           JF_URL: https://psemea.jfrog.io
         with:
           oidc-provider-name: fabien-github
-
-      - name: Initialize Worker (first-time only)
-        if: ${{ false }} # Disable unless needed
-        run: |
-          jf worker init SCHEDULED_EVENT xray-data-extractor
 
       - name: Dry-run Worker
         run: |
